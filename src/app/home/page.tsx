@@ -67,6 +67,10 @@ function formatDate(d: Date) {
   return new Intl.DateTimeFormat("de-DE", { dateStyle: "full" }).format(d);
 }
 
+function isoDate(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
 export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -120,19 +124,46 @@ export default function Home() {
     } catch {}
   }, [theme]);
 
-  const [plan, setPlan] = useState<Plan>(() => {
-    if (typeof window === "undefined") return createEmptyPlan();
+  type PlansByWeek = { [weekId: string]: Plan };
+
+  const [weekOffset, setWeekOffset] = useState<number>(0);
+
+  const [plans, setPlans] = useState<PlansByWeek>(() => {
+    if (typeof window === "undefined") return {} as PlansByWeek;
     try {
-      const raw = localStorage.getItem("food-plan");
-      return raw ? (JSON.parse(raw) as Plan) : createEmptyPlan();
+      const raw = localStorage.getItem("food-plans");
+      return raw ? (JSON.parse(raw) as PlansByWeek) : {};
     } catch {
-      return createEmptyPlan();
+      return {} as PlansByWeek;
     }
   });
 
+  const weekStartBase = getWeekStart();
+  const displayedWeekStart = useMemo(() => {
+    const d = new Date(weekStartBase);
+    d.setDate(d.getDate() + weekOffset * 7);
+    return d;
+  }, [weekStartBase, weekOffset]);
+
+  const currentWeekId = isoDate(displayedWeekStart);
+
+  const plan: Plan = useMemo(() => {
+    return plans[currentWeekId] || createEmptyPlan();
+  }, [plans, currentWeekId]);
+
   useEffect(() => {
-    localStorage.setItem("food-plan", JSON.stringify(plan));
-  }, [plan]);
+    try {
+      localStorage.setItem("food-plans", JSON.stringify(plans));
+    } catch {}
+  }, [plans]);
+
+  function updatePlan(updater: (prev: Plan) => Plan) {
+    setPlans((prev) => {
+      const existing = prev[currentWeekId] || createEmptyPlan();
+      const next = updater(existing);
+      return { ...prev, [currentWeekId]: next };
+    });
+  }
 
   const filtered = useMemo(() => {
     return dishes
@@ -165,10 +196,12 @@ export default function Home() {
   }
 
   function assignToPlan(dish: Dish) {
-    setPlan((prev) => ({
+    updatePlan((prev) => ({
       ...prev,
       [dayKey]: { ...prev[dayKey], [mealType]: dish.id },
     }));
+    // Close the suggestion card after adding
+    setSuggestion(null);
   }
 
   function getDishById(id: string | null) {
@@ -192,21 +225,17 @@ export default function Home() {
   const [dragOver, setDragOver] = useState<{ day: DayKey; meal: MealType } | null>(null);
 
   function moveOrSwapMeal(from: DragPayload, to: { day: DayKey; meal: MealType }) {
-    setPlan((prev) => {
-      const fromDish = prev[from.day][from.meal];
-      const toDish = prev[to.day][to.meal];
-      // nothing to move
-      if (!fromDish) return prev;
-      // clone
-      const next: Plan = JSON.parse(JSON.stringify(prev));
-      // swap if target occupied, else move
+    setPlans((prevPlans) => {
+      const base = prevPlans[currentWeekId] || createEmptyPlan();
+      const fromDish = base[from.day][from.meal];
+      const toDish = base[to.day][to.meal];
+      if (!fromDish) return prevPlans;
+      const next: Plan = JSON.parse(JSON.stringify(base));
       next[from.day][from.meal] = toDish || null;
       next[to.day][to.meal] = fromDish;
-      return next;
+      return { ...prevPlans, [currentWeekId]: next };
     });
   }
-
-  const weekStart = getWeekStart();
 
   // Show loading state while checking authentication
   if (status === "loading") {
@@ -408,27 +437,40 @@ export default function Home() {
                 </div>
                 <div className="flex gap-2">
                   <button onClick={randomSuggest} className="px-4 py-2 rounded-lg bg-black text-white dark:bg-white dark:text-black font-medium">Zufallsvorschlag</button>
-                  {suggestion && (
-                    <button onClick={() => assignToPlan(suggestion)} className="px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 font-medium hover:bg-black/5 dark:hover:bg-white/10">Zum Plan hinzufügen</button>
-                  )}
                 </div>
               </div>
 
-              <div className="mt-6 grid gap-4">
-                {suggestion ? (
+              {suggestion ? (
+                <div className="mt-3 grid gap-4">
                   <div className="rounded-xl border border-black/10 dark:border-white/10 p-4 bg-white dark:bg-zinc-800">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-3">
                       <div>
                         <h3 className="text-lg font-semibold">{suggestion.name}</h3>
                         <p className="text-sm text-zinc-600 dark:text-zinc-400">{suggestion.cuisine} • {suggestion.diet} • {suggestion.time} min</p>
                       </div>
-                      <button onClick={() => setSuggestion(null)} className="text-sm underline underline-offset-4 hover:opacity-80">Anderen Vorschlag</button>
+                      <div className="flex items-center gap-2">
+                     
+                        <button
+                          onClick={() => setSuggestion(null)}
+                          className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600/50 dark:text-red-300 dark:hover:bg-red-900/30"
+                          aria-label="Vorschlag verwerfen"
+                          title="Vorschlag verwerfen"
+                        >
+                          ✕
+                        </button>
+                           <button
+                          onClick={() => assignToPlan(suggestion)}
+                          className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-600/50 dark:text-emerald-300 dark:hover:bg-emerald-900/30"
+                          aria-label="Zum Plan hinzufügen"
+                          title="Zum Plan hinzufügen"
+                        >
+                          ✓
+                        </button>
+                      </div>
                     </div>
                   </div>
-                ) : (
-                  <p className="text-zinc-600 dark:text-zinc-400">Klicke auf "Zufallsvorschlag", um eine Idee zu erhalten – gefiltert nach deinen Kriterien.</p>
-                )}
-              </div>
+                </div>
+              ) : null}
             </div>
 
             {/* Library */}
@@ -457,9 +499,31 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold">Wochenplan</h2>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">Woche ab {formatDate(weekStart)}</p>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">Woche ab {formatDate(displayedWeekStart)}</p>
               </div>
-              <button onClick={() => setPlan(createEmptyPlan())} className="self-start px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10">Plan leeren</button>
+              <div className="flex items-center gap-2 self-start">
+                <button
+                  onClick={() => setWeekOffset((o) => o - 1)}
+                  className="px-3 py-2 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10"
+                  aria-label="Vorige Woche"
+                >
+                  ← 
+                </button>
+                <button
+                  onClick={() => setWeekOffset(0)}
+                  disabled={weekOffset === 0}
+                  className={`px-3 py-2 rounded-lg border border-black/10 dark:border-white/10 ${weekOffset === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-black/5 dark:hover:bg-white/10"}`}
+                >
+                  Aktuelle Woche
+                </button>
+                <button
+                  onClick={() => setWeekOffset((o) => o + 1)}
+                  className="px-3 py-2 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10"
+                  aria-label="Nächste Woche"
+                >
+                  →
+                </button>
+              </div>
             </div>
 
             {/* Today highlight */}
@@ -635,7 +699,7 @@ export default function Home() {
                                   <button
                                     className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600/50 dark:hover:bg-red-900/30"
                                     onClick={() => {
-                                      setPlan((prev) => ({
+                                      updatePlan((prev) => ({
                                         ...prev,
                                         [day]: { ...prev[day], [m]: null },
                                       }));
