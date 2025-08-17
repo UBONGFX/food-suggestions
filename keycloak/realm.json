@@ -1,0 +1,66 @@
+{
+    "id": "myrealm",
+    "realm": "myrealm",
+    "displayName": "Food Suggestions Realm",
+    "enabled": true,
+    "sslRequired": "external",
+    "registrationAllowed": true,
+    "registrationEmailAsUsername": false,
+    "rememberMe": false,
+    "verifyEmail": false,
+    "loginWithEmailAllowed": true,
+    "duplicateEmailsAllowed": false,
+    "resetPasswordAllowed": true,
+    "editUsernameAllowed": false,
+    "bruteForceProtected": false,
+    "clients": [
+        {
+            "clientId": "food-suggestions",
+            "name": "food-suggestions",
+            "rootUrl": "http://localhost:3000",
+            "baseUrl": "http://localhost:3000",
+            "enabled": true,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "K375AyEqEmXQkWZCxVnt54PIlHWCHhiX",
+            "redirectUris": [
+                "http://localhost:3000/api/auth/callback/keycloak"
+            ],
+            "webOrigins": [
+                "http://localhost:3000"
+            ],
+            "bearerOnly": false,
+            "consentRequired": false,
+            "standardFlowEnabled": true,
+            "implicitFlowEnabled": false,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "authorizationServicesEnabled": false,
+            "publicClient": false,
+            "frontchannelLogout": false,
+            "protocol": "openid-connect",
+            "attributes": {
+                "post.logout.redirect.uris": "http://localhost:3000",
+                "oauth2.device.authorization.grant.enabled": "false",
+                "oidc.ciba.grant.enabled": "false"
+            },
+            "fullScopeAllowed": true
+        }
+    ],
+    "users": [
+        {
+            "username": "jordi.isken",
+            "enabled": true,
+            "emailVerified": true,
+            "firstName": "Jordi",
+            "lastName": "Isken",
+            "email": "jordi@isken-ag.de",
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "Pa$$w0rd",
+                    "temporary": false
+                }
+            ]
+        }
+    ]
+}

@@ -218,7 +218,7 @@ export default function Home() {
               </nav>
               <AuthButton />
               <button
-                onClick={() => setTab("profil")}
+                onClick={() => router.push("/profile")}
                 className="inline-flex items-center justify-center h-9 w-9 aspect-square shrink-0 rounded-full p-0 border border-black/10 dark:border-white/10 bg-white/80 dark:bg-zinc-800/80 hover:bg-black/5 dark:hover:bg-white/10"
                 aria-label="Profil öffnen"
                 title="Profil"
@@ -228,7 +228,7 @@ export default function Home() {
             </div>
             {/* Mobile: only profile button on the right in the top row */}
             <button
-              onClick={() => setTab("profil")}
+              onClick={() => router.push("/profile")}
               className="md:hidden inline-flex items-center justify-center h-9 w-9 aspect-square shrink-0 rounded-full p-0 border border-black/10 dark:border-white/10 bg-white/80 dark:bg-zinc-800/80 hover:bg-black/5 dark:hover:bg-white/10"
               aria-label="Profil öffnen"
               title="Profil"

@@ -13,9 +13,9 @@ export default function AuthButton({ showGoToApp = false }: AuthButtonProps) {
 
   if (status === "loading") {
     return (
-      <div className="flex items-center space-x-2">
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
-        <span>Loading...</span>
+      <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-zinc-600 dark:border-zinc-300"></div>
+        <span>Wird geladen...</span>
       </div>
     )
   }
@@ -26,7 +26,7 @@ export default function AuthButton({ showGoToApp = false }: AuthButtonProps) {
       return (
         <button
           onClick={() => router.push("/auth/signin")}
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className="w-full max-w-sm mx-auto px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 bg-black text-white dark:bg-white dark:text-black text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30 hover:opacity-95 active:opacity-90"
         >
           Anmelden
         </button>
@@ -37,7 +37,7 @@ export default function AuthButton({ showGoToApp = false }: AuthButtonProps) {
     return (
       <button
         onClick={() => signIn("keycloak", { callbackUrl: "/home" })}
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        className="w-full max-w-sm mx-auto px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 bg-black text-white dark:bg-white dark:text-black text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30 hover:opacity-95 active:opacity-90"
       >
         Sign In
       </button>
@@ -49,9 +49,9 @@ export default function AuthButton({ showGoToApp = false }: AuthButtonProps) {
     return (
       <button
         onClick={() => router.push("/home")}
-        className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+        className="w-full max-w-sm mx-auto px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 bg-black text-white dark:bg-white dark:text-black text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30 hover:opacity-95 active:opacity-90"
       >
-        Go to App
+        Zur App
       </button>
     )
   }

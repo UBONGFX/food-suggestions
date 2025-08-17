@@ -1,15 +1,18 @@
 "use client"
 
-import { signIn, getProviders } from "next-auth/react"
+import { signIn, getProviders, getCsrfToken } from "next-auth/react"
 import { useEffect, useState } from "react"
 
 export default function SignIn() {
   const [providers, setProviders] = useState<any>(null)
+  const [csrfToken, setCsrfToken] = useState<string>("")
 
   useEffect(() => {
     const setAuthProviders = async () => {
       const res = await getProviders()
+      const csrf = await getCsrfToken()
       setProviders(res)
+      setCsrfToken(csrf || "")
     }
     setAuthProviders()
   }, [])
@@ -42,23 +45,26 @@ export default function SignIn() {
 
           <div className="grid gap-3">
             {Object.values(providers).map((provider: any) => (
-              <button
-                key={provider.name}
-                onClick={() => signIn(provider.id, { callbackUrl: "/home" })}
-                className="group w-full px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 bg-black text-white dark:bg-white dark:text-black text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30 hover:opacity-95 active:opacity-90"
-              >
-                {provider.name === "Keycloak" ? (
-                  <span className="inline-flex w-full items-center justify-center gap-2">
-                    <span className="text-xl leading-none" role="img" aria-label="Keycloak">🔐</span>
-                    <span>Anmelden mit Keycloak</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex w-full items-center justify-center gap-2">
-                    <span className="text-base leading-none">🔑</span>
-                    <span>Anmelden mit {provider.name}</span>
-                  </span>
-                )}
-              </button>
+              <form key={provider.name} action={`/api/auth/signin/${provider.id}`} method="POST">
+                <input type="hidden" name="csrfToken" value={csrfToken} />
+                <input type="hidden" name="callbackUrl" value="/home" />
+                <button
+                  type="submit"
+                  className="group w-full px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 bg-black text-white dark:bg-white dark:text-black text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30 hover:opacity-95 active:opacity-90"
+                >
+                  {provider.name === "Keycloak" ? (
+                    <span className="inline-flex w-full items-center justify-center gap-2">
+                      <span className="text-xl leading-none" role="img" aria-label="Keycloak">🔐</span>
+                      <span>Anmelden mit Keycloak</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex w-full items-center justify-center gap-2">
+                      <span className="text-base leading-none">🔑</span>
+                      <span>Anmelden mit {provider.name}</span>
+                    </span>
+                  )}
+                </button>
+              </form>
             ))}
           </div>
 
@@ -107,7 +113,7 @@ export default function SignIn() {
           <div className="text-center text-sm text-zinc-600 dark:text-zinc-400">
             Noch keinen Account?{" "}
             <a
-                href="http://localhost:8083/realms/myrealm/protocol/openid-connect/registrations?client_id=food-suggestions&response_type=code&scope=openid&redirect_uri=http://localhost:3000/api/auth/callback/keycloak"
+                href="http://localhost:8080/realms/myrealm/protocol/openid-connect/registrations?client_id=food-suggestions&response_type=code&scope=openid&redirect_uri=http://localhost:3000/api/auth/callback/keycloak"
                 className="font-medium underline underline-offset-4 hover:opacity-90"
               >
                 Hier registrieren
