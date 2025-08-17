@@ -1,21 +1,56 @@
 "use client"
 
-import { signIn, getProviders, getCsrfToken } from "next-auth/react"
+import { signIn, getProviders, getCsrfToken, useSession } from "next-auth/react"
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 export default function SignIn() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [providers, setProviders] = useState<any>(null)
   const [csrfToken, setCsrfToken] = useState<string>("")
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (status === "loading") return // Still loading
+    if (session) {
+      router.push("/home") // Redirect to home if already logged in
+    }
+  }, [session, status, router])
+
   useEffect(() => {
     const setAuthProviders = async () => {
+      // Only fetch providers if not authenticated
+      if (status === "loading" || session) return
+      
       const res = await getProviders()
       const csrf = await getCsrfToken()
       setProviders(res)
       setCsrfToken(csrf || "")
     }
     setAuthProviders()
-  }, [])
+  }, [status, session])
+
+  // Show loading while checking authentication status
+  if (status === "loading") {
+    return (
+      <main className="min-h-dvh flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md">
+          <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-zinc-900/70 p-6 shadow-sm">
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  // Don't render signin form if already authenticated (will redirect)
+  if (session) {
+    return null
+  }
 
   if (!providers) {
     return (
@@ -122,11 +157,17 @@ export default function SignIn() {
         </div>
         <footer className="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <span className="hover:opacity-80">Impressum</span>
+              <Link href="/legal/impressum" className="hover:opacity-80 hover:underline">
+                Impressum
+              </Link>
               <span className="opacity-40 select-none">·</span>
-              <span className="hover:opacity-80">Datenschutz</span>
+              <Link href="/legal/datenschutz" className="hover:opacity-80 hover:underline">
+                Datenschutz
+              </Link>
               <span className="opacity-40 select-none">·</span>
-              <span className="hover:opacity-80">AGB</span>
+              <Link href="/legal/agb" className="hover:opacity-80 hover:underline">
+                AGB
+              </Link>
               <span className="opacity-40 select-none">·</span>
               <span className="opacity-70">Version v0.1.0</span>
             </div>

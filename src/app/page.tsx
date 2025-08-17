@@ -1,6 +1,7 @@
 "use client"
 
 import { useSession } from "next-auth/react"
+import Link from "next/link"
 import AuthButton from "@/components/auth-button"
 
 export default function LandingPage() {
@@ -36,6 +37,19 @@ export default function LandingPage() {
 
       <footer className="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
         <p>&copy; 2025 Essensvorschläge & Planer. Alle Rechte vorbehalten.</p>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          <Link href="/legal/impressum" className="hover:opacity-80 hover:underline transition-all duration-200">
+            Impressum
+          </Link>
+          <span className="opacity-40 select-none">·</span>
+          <Link href="/legal/datenschutz" className="hover:opacity-80 hover:underline transition-all duration-200">
+            Datenschutz
+          </Link>
+          <span className="opacity-40 select-none">·</span>
+          <Link href="/legal/agb" className="hover:opacity-80 hover:underline transition-all duration-200">
+            AGB
+          </Link>
+        </div>
       </footer>
     </div>
   )

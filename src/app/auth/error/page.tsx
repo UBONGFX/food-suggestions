@@ -44,11 +44,17 @@ export default function AuthError() {
 
           <footer className="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <span className="hover:opacity-80">Impressum</span>
+              <Link href="/legal/impressum" className="hover:opacity-80 hover:underline transition-all duration-200">
+                Impressum
+              </Link>
               <span className="opacity-40 select-none">·</span>
-              <span className="hover:opacity-80">Datenschutz</span>
+              <Link href="/legal/datenschutz" className="hover:opacity-80 hover:underline transition-all duration-200">
+                Datenschutz
+              </Link>
               <span className="opacity-40 select-none">·</span>
-              <span className="hover:opacity-80">AGB</span>
+              <Link href="/legal/agb" className="hover:opacity-80 hover:underline transition-all duration-200">
+                AGB
+              </Link>
               <span className="opacity-40 select-none">·</span>
               <span className="opacity-70">Version v0.1.0</span>
             </div>
