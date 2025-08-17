@@ -186,6 +186,26 @@ export default function Home() {
     }
   }
 
+  // --- Drag & Drop for meals across days ---
+  type DragPayload = { day: DayKey; meal: MealType; dishId: string };
+  const [dragging, setDragging] = useState<DragPayload | null>(null);
+  const [dragOver, setDragOver] = useState<{ day: DayKey; meal: MealType } | null>(null);
+
+  function moveOrSwapMeal(from: DragPayload, to: { day: DayKey; meal: MealType }) {
+    setPlan((prev) => {
+      const fromDish = prev[from.day][from.meal];
+      const toDish = prev[to.day][to.meal];
+      // nothing to move
+      if (!fromDish) return prev;
+      // clone
+      const next: Plan = JSON.parse(JSON.stringify(prev));
+      // swap if target occupied, else move
+      next[from.day][from.meal] = toDish || null;
+      next[to.day][to.meal] = fromDish;
+      return next;
+    });
+  }
+
   const weekStart = getWeekStart();
 
   // Show loading state while checking authentication
@@ -547,12 +567,51 @@ export default function Home() {
                         {(["Mittag", "Abend"] as const).map((m) => {
                           const selected = getDishById(plan[day][m]);
                           return (
-                            <div key={m} className="rounded-lg bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/10 p-3">
+                            <div
+                              key={m}
+                              className={`rounded-lg bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/10 p-3 transition ring-offset-0 ${
+                                dragOver && dragOver.day === day && dragOver.meal === m ? "ring-2 ring-blue-400 dark:ring-blue-500" : ""
+                              }`}
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                setDragOver({ day, meal: m });
+                              }}
+                              onDragLeave={() => setDragOver((cur) => (cur && cur.day === day && cur.meal === m ? null : cur))}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                setDragOver(null);
+                                try {
+                                  const data = e.dataTransfer.getData("application/json") || e.dataTransfer.getData("text/plain");
+                                  const payload = (data ? JSON.parse(data) : dragging) as DragPayload | null;
+                                  if (payload) {
+                                    moveOrSwapMeal(payload, { day, meal: m });
+                                  }
+                                } catch {
+                                  if (dragging) moveOrSwapMeal(dragging, { day, meal: m });
+                                }
+                                setDragging(null);
+                              }}
+                            >
                               <p className="text-[11px] uppercase tracking-wide text-zinc-500 mb-1">{m}</p>
 
                               {/* Selected summary */}
                               {selected ? (
-                                <div className="mb-2">
+                                <div
+                                  className="mb-2 cursor-grab active:cursor-grabbing"
+                                  draggable
+                                  onDragStart={(e) => {
+                                    const payload: DragPayload = { day, meal: m, dishId: selected.id };
+                                    setDragging(payload);
+                                    try {
+                                      e.dataTransfer.setData("application/json", JSON.stringify(payload));
+                                    } catch {
+                                      e.dataTransfer.setData("text/plain", JSON.stringify(payload));
+                                    }
+                                    e.dataTransfer.effectAllowed = "move";
+                                  }}
+                                  aria-grabbed={true}
+                                  title="Zum Verschieben ziehen"
+                                >
                                   <p className="font-medium truncate">{selected.name}</p>
                                   <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-zinc-600 dark:text-zinc-400">
                                     <span className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10">{selected.cuisine}</span>
@@ -561,7 +620,7 @@ export default function Home() {
                                   </div>
                                 </div>
                               ) : (
-                                <p className="mb-2 text-sm text-zinc-500">Noch nichts geplant</p>
+                                <p className="mb-2 text-sm text-zinc-500">Noch nichts geplant – hierher ziehen oder „Jetzt planen“</p>
                               )}
 
                               {/* Controls */}
