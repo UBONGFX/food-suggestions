@@ -175,6 +175,17 @@ export default function Home() {
     return dishes.find((d) => d.id === id) || null;
   }
 
+  function goToSuggest(targetDay: DayKey, m: MealType) {
+    setMealType(m);
+    const todayKey: DayKey = DAYS[(today.getDay() + 6) % 7];
+    const diff = DAYS.indexOf(targetDay) - DAYS.indexOf(todayKey);
+    setDayOffset(diff);
+    setTab("vorschlag");
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
   const weekStart = getWeekStart();
 
   // Show loading state while checking authentication
@@ -259,7 +270,6 @@ export default function Home() {
             {/* ... (LEAVE ALL EXISTING CODE OF THE VORSCHLAG SECTION UNCHANGED) ... */}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="grid gap-2 sm:col-span-2 lg:col-span-4">
-              <label className="text-sm font-medium">Tag wählen</label>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setDayOffset((o) => o - 1)}
@@ -344,6 +354,37 @@ export default function Home() {
                 <div>
                   <h2 className="text-xl font-semibold">Vorschlag · {mealType}</h2>
                   <p className="text-sm text-zinc-600 dark:text-zinc-400">{formatDate(targetDate)}</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    {(() => {
+                      const mittag = plan[dayKey].Mittag;
+                      const abend = plan[dayKey].Abend;
+                      const full = Boolean(mittag && abend);
+                      const partial = Boolean((mittag && !abend) || (!mittag && abend));
+                      const base = "inline-flex items-center gap-1 px-2 py-1 rounded-full border text-xs";
+                      if (full) {
+                        return (
+                          <span className={`${base} bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-600/40`}>
+                            ● Status: Komplett
+                          </span>
+                        );
+                      }
+                      if (partial) {
+                        return (
+                          <span className={`${base} bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-600/40`}>
+                            ● Status: Teilweise
+                          </span>
+                        );
+                      }
+                      return (
+                        <span className={`${base} bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700`}>
+                          ● Status: Offen
+                        </span>
+                      );
+                    })()}
+                    <span className="text-xs text-zinc-600 dark:text-zinc-400">
+                      Mittag: {plan[dayKey].Mittag ? '✓' : '–'} · Abend: {plan[dayKey].Abend ? '✓' : '–'}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={randomSuggest} className="px-4 py-2 rounded-lg bg-black text-white dark:bg-white dark:text-black font-medium">Zufallsvorschlag</button>
@@ -421,59 +462,148 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Plan-Übersicht */}
+            <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-zinc-900/70 p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h3 className="font-semibold">Übersicht</h3>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">Welche Tage sind schon geplant?</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-600/40">● Komplett</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-600/40">● Teilweise</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">● Offen</span>
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                {DAYS.map((d) => {
+                  const mittag = plan[d].Mittag;
+                  const abend = plan[d].Abend;
+                  const full = Boolean(mittag && abend);
+                  const partial = Boolean((mittag && !abend) || (!mittag && abend));
+                  const cls = full
+                    ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200 border-emerald-200 dark:border-emerald-600/40"
+                    : partial
+                    ? "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 border-amber-200 dark:border-amber-600/40"
+                    : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700";
+                  return (
+                    <button
+                      key={d}
+                      onClick={() => {
+                        // scroll to planner grid
+                        const el = document.getElementById(`planner-${d}`);
+                        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }}
+                      className={`text-left px-3 py-2 rounded-lg border ${cls}`}
+                      title={`${d}: ${mittag ? "Mittag ✓" : "Mittag –"} · ${abend ? "Abend ✓" : "Abend –"}`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium text-sm truncate">{d}</span>
+                        <span className="text-xs opacity-80">{full ? "✓✓" : partial ? "✓–" : "––"}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Planner grid */}
             <div className="grid gap-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
-                {DAYS.map((day) => (
-                  <div key={day} className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-zinc-900/70 p-3 flex flex-col">
-                    <h4 className="font-semibold mb-2">{day}</h4>
-                    {(["Mittag", "Abend"] as const).map((m) => {
-                      const selected = getDishById(plan[day][m]);
-                      return (
-                        <div key={m} className="mb-3 last:mb-0">
-                          <p className="text-xs uppercase tracking-wide text-zinc-500 mb-1">{m}</p>
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                            <div className="relative flex-1 min-w-0">
-                              <select
-                                className="w-full h-10 px-3 pr-8 rounded-md border bg-white dark:bg-zinc-800 border-black/10 dark:border-white/10 text-sm appearance-none leading-tight truncate"
-                                value={selected?.id || ""}
-                                onChange={(e) => {
-                                  const id = e.target.value || null;
-                                  setPlan((prev) => ({
-                                    ...prev,
-                                    [day]: { ...prev[day], [m]: id },
-                                  }));
-                                }}
-                              >
-                                <option value="">– auswählen –</option>
-                                {dishes.map((d) => (
-                                  <option key={d.id} value={d.id}>
-                                    {d.name} ({d.cuisine} • {d.diet} • {d.time} min)
-                                  </option>
-                                ))}
-                              </select>
-                              <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-zinc-500">▾</span>
+              <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                {DAYS.map((day) => {
+                  const mittagId = plan[day].Mittag;
+                  const abendId = plan[day].Abend;
+                  const full = Boolean(mittagId && abendId);
+                  const partial = Boolean((mittagId && !abendId) || (!mittagId && abendId));
+                  const statusBorder = full
+                    ? "border-emerald-300 dark:border-emerald-600/50"
+                    : partial
+                    ? "border-amber-300 dark:border-amber-600/50"
+                    : "border-black/10 dark:border-white/10";
+
+                  return (
+                    <div
+                      key={day}
+                      id={`planner-${day}`}
+                      className={`rounded-2xl border ${statusBorder} bg-white/70 dark:bg-zinc-900/70 p-4 flex flex-col gap-3`}
+                    >
+                      {/* Day header */}
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-base">{day}</h4>
+                        <span className={`text-xs px-2 py-0.5 rounded-full border ${
+                          full
+                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-600/40"
+                            : partial
+                            ? "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-600/40"
+                            : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700"
+                        }`}>
+                          {full ? "Komplett" : partial ? "Teilweise" : "Offen"}
+                        </span>
+                      </div>
+
+                      {/* Two-column layout for meals on larger screens */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {(["Mittag", "Abend"] as const).map((m) => {
+                          const selected = getDishById(plan[day][m]);
+                          return (
+                            <div key={m} className="rounded-lg bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/10 p-3">
+                              <p className="text-[11px] uppercase tracking-wide text-zinc-500 mb-1">{m}</p>
+
+                              {/* Selected summary */}
+                              {selected ? (
+                                <div className="mb-2">
+                                  <p className="font-medium truncate">{selected.name}</p>
+                                  <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-zinc-600 dark:text-zinc-400">
+                                    <span className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10">{selected.cuisine}</span>
+                                    <span className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10">{selected.diet}</span>
+                                    <span className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10">⏱ {selected.time} min</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="mb-2 text-sm text-zinc-500">Noch nichts geplant</p>
+                              )}
+
+                              {/* Controls */}
+                              {selected ? (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => goToSuggest(day, m)}
+                                    className="px-3 py-1.5 rounded-md border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10 text-sm"
+                                  >
+                                    Ändern
+                                  </button>
+                                  <button
+                                    className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600/50 dark:hover:bg-red-900/30"
+                                    onClick={() => {
+                                      setPlan((prev) => ({
+                                        ...prev,
+                                        [day]: { ...prev[day], [m]: null },
+                                      }));
+                                    }}
+                                    aria-label="Entfernen"
+                                    title="Entfernen"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => goToSuggest(day, m)}
+                                    className="w-full px-3 py-2 rounded-md bg-black text-white dark:bg-white dark:text-black text-sm font-medium"
+                                  >
+                                    Jetzt planen
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                            {selected && (
-                              <button
-                                className="h-10 w-10 flex items-center justify-center rounded-md border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600/50 dark:hover:bg-red-900/30"
-                                onClick={() => {
-                                  setPlan((prev) => ({
-                                    ...prev,
-                                    [day]: { ...prev[day], [m]: null },
-                                  }));
-                                }}
-                                aria-label="Entfernen"
-                              >
-                                ✕
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </section>
